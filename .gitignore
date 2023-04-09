@@ -127,3 +127,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# secrets
+config.yaml
+
+# personal info
+organizers.csv
