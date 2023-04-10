@@ -73,23 +73,22 @@ def send_organizer_text(organizer_df: pd.DataFrame, organizer_message: str, gpt_
             # if number of characters in message is greater than 1600, send two messages
             print(len(gpt_story))
             for message_chunk in range(0, ceil(len(gpt_story)/1600)):
-                start_char = message_chunk * 1600
-                end_char = start_char + 1600 - 1
-                print(message_chunk)
+                start_char: int = message_chunk * 1600
+                end_char: int = start_char + 1600 - 1
                 message = client.messages \
                         .create(
                             body=gpt_story[start_char:end_char],
                             from_= f'+1{os.environ["TWILIO_NUMBER"]}',
-                            to=  # f'+1{org_num}'
+                            to=  f'+1{org_num}'
                         )          
             message = client.messages \
                         .create(
                             body=organizer_message,
                             from_= f'+1{os.environ["TWILIO_NUMBER"]}',
-                            to= # f'+1{org_num}'
+                            to= f'+1{org_num}'
                         )
         except Exception as e:
-            failureMessage = f"""
+            failureMessage: str = f"""
             Failed to sent message to {org_num}. Error message:
             {e}
             """
@@ -106,23 +105,23 @@ def send_organizer_text(organizer_df: pd.DataFrame, organizer_message: str, gpt_
 # # openAI code
 def generate_gpt_story(organizer_df) -> str:
     # This function will generate a story using the GPT-3 API
-    story_types = ["epic poem in the style of homer", 
+    story_types: list[str] = ["epic poem in the style of homer", 
                    "short story in the style of magical realism, emulating gabriel garcia marquez or jorge luis borges",
                    "picaresque story in the style of candide by voltaire or lazarillo de tormes",
                    "story in iambic pentameter in the style of william shakespeare",
                    "a story in the style of a gen Z texter or tik toker who doesn't capitalize or use punctuation"]
-    story_type = np.random.choice(story_types)
-    organizer_name = organizer_df.organizer[0]
-    language = 'english' #np.random.choice(organizer_df.languages[0].split(','))
-    interests = organizer_df.interests[0]
-    template = """
+    story_type: str = np.random.choice(story_types)
+    organizer_name: str = organizer_df.organizer[0]
+    language: str = 'english' #np.random.choice(organizer_df.languages[0].split(','))
+    interests: str = organizer_df.interests[0]
+    template: str = """
     Write a {story_type}. The story should not be excessively long. The proganist is {organizer_name}, who will organizing a language exchange event. Tell the story in the {language} language.
     Incorporate {organizer_name}'s interests into the story. Do not simply regurgitate the list of their interests, but weave them into the story.
     Here are some of {organizer_name}'s interests: {interests}
     """
     prompt = PromptTemplate(template=template, input_variables=["story_type", "organizer_name", "language", "interests"])
     llm_chain = LLMChain(prompt=prompt, llm=OpenAI(temperature=0.5, model_name="gpt-4"), verbose=True)
-    story = llm_chain.predict(story_type=story_type, organizer_name=organizer_name, language=language, interests=interests)
+    story: str = llm_chain.predict(story_type=story_type, organizer_name=organizer_name, language=language, interests=interests)
     return story
 
 
