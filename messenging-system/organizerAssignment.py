@@ -109,7 +109,8 @@ def generate_gpt_story(organizer_df) -> str:
                    "short story in the style of magical realism, emulating gabriel garcia marquez or jorge luis borges",
                    "picaresque story in the style of candide by voltaire or lazarillo de tormes",
                    "story in iambic pentameter in the style of william shakespeare",
-                   "a story in the style of a gen Z texter or tik toker who doesn't capitalize or use punctuation"]
+                   "a story in the style of a gen Z texter or tik toker who doesn't capitalize or use punctuation",
+                   "a whimsically imaginative poem in the style of dr. seuss"]
     story_type: str = np.random.choice(story_types)
     organizer_name: str = organizer_df.organizer[0]
     language: str = 'english' #np.random.choice(organizer_df.languages[0].split(','))
