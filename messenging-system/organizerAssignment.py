@@ -121,7 +121,7 @@ def generate_gpt_story(organizer_df) -> str:
     Here are some of {organizer_name}'s interests: {interests}
     """
     prompt = PromptTemplate(template=template, input_variables=["story_type", "organizer_name", "language", "interests"])
-    llm_chain = LLMChain(prompt=prompt, llm=OpenAI(temperature=0.5, model_name="gpt-4"), verbose=True)
+    llm_chain = LLMChain(prompt=prompt, llm=OpenAI(temperature=1, model_name="gpt-4"), verbose=True)
     story: str = llm_chain.predict(story_type=story_type, organizer_name=organizer_name, language=language, interests=interests)
     return story
 
