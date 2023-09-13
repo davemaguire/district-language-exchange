@@ -6,15 +6,18 @@ import numpy as np
 import yaml
 from langchain import PromptTemplate, OpenAI, LLMChain
 import math
+import logging as log
 
 # Organizer message
 def get_organizer_df() -> pd.DataFrame:
-    organizer_df: pd.DataFrame =  pd.read_csv('../organizer-info.csv') # need to read from GCS for cloud deployment
+    organizer_df: pd.DataFrame =  pd.read_csv('organizer-info.csv') # need to read from GCS for cloud deployment
+    log.info('Loaded organizer df')
     return organizer_df
 
 def increment_organizer_df(organizer_df: pd.DataFrame) -> None:
     # move next organizer to top of csv
     organizer_df.apply(np.roll, shift=1).to_csv('../organizer-info.csv', index=False) # need to write to GCS for cloud deployment
+    log.info('Incremented organizer df')
 
 # get organizers & send message
 def generate_organizer_message(organizer_df: pd.DataFrame) -> str:
@@ -35,6 +38,7 @@ def generate_organizer_message(organizer_df: pd.DataFrame) -> str:
     2. {organizer_df.organizer.iloc[-2]}
     3. {organizer_df.organizer.iloc[-3]}
     '''
+    log.info(f'Generated message: {message_body}')
 
     return message_body
 
@@ -43,7 +47,7 @@ def ceil(n):
 
 def set_secrets() -> None:
     # Load the config file
-    with open('../config.yaml', 'r') as f:
+    with open('config.yaml', 'r') as f:
         config = yaml.safe_load(f)
     
     # Get the value of the environment variable from the config
@@ -52,10 +56,10 @@ def set_secrets() -> None:
     os.environ['TWILIO_AUTH_TOKEN'] = config['TWILIO_AUTH_TOKEN']
     os.environ['TWILIO_NUMBER'] = config['TWILIO_NUMBER']
     os.environ['ERROR_REPORT_NUMBER'] = config['ERROR_REPORT_NUMBER']
-    print(os.environ['TWILIO_NUMBER'])
+    log.info('Secrets set successfully')
 
 # ## Twilio Code
-def send_organizer_text(organizer_df: pd.DataFrame, organizer_message: str, gpt_story:str) -> None:
+def send_organizer_text(organizer_df: pd.DataFrame, organizer_message: str, gpt_story:str = None) -> None:
     # This week's organizer
     organizer_phone: str = organizer_df.phone[0]
 
@@ -71,27 +75,29 @@ def send_organizer_text(organizer_df: pd.DataFrame, organizer_message: str, gpt_
     for org_num in organizer_df.phone:
         try:
             # if number of characters in message is greater than 1600, send two messages
-            print(len(gpt_story))
-            for message_chunk in range(0, ceil(len(gpt_story)/1600)):
-                start_char: int = message_chunk * 1600
-                end_char: int = start_char + 1600 - 1
-                message = client.messages \
-                        .create(
-                            body=gpt_story[start_char:end_char],
-                            from_= f'+1{os.environ["TWILIO_NUMBER"]}',
-                            to=  f'+1{org_num}'
-                        )          
+            if gpt_story is not None:
+                for message_chunk in range(0, ceil(len(gpt_story)/1600)):
+                    start_char: int = message_chunk * 1600
+                    end_char: int = start_char + 1600 - 1
+                    message = client.messages \
+                            .create(
+                                body=gpt_story[start_char:end_char],
+                                from_= f'+1{os.environ["TWILIO_NUMBER"]}',
+                                to=  f'+1{org_num}'
+                            )          
             message = client.messages \
                         .create(
                             body=organizer_message,
                             from_= f'+1{os.environ["TWILIO_NUMBER"]}',
                             to= f'+1{org_num}'
                         )
+            log.info(f'Sent message to {org_num}')
         except Exception as e:
             failureMessage: str = f"""
             Failed to sent message to {org_num}. Error message:
             {e}
             """
+            log.info(failureMessage)
             message = client.messages \
                         .create(
                             body=failureMessage,
@@ -132,6 +138,6 @@ if __name__ == "__main__":
     set_secrets()
     organizer_df: pd.DataFrame = get_organizer_df()
     organizer_message = generate_organizer_message(organizer_df)
-    gpt_story = generate_gpt_story(organizer_df)
-    send_organizer_text(organizer_df, organizer_message, gpt_story) 
+    #gpt_story = generate_gpt_story(organizer_df)
+    send_organizer_text(organizer_df, organizer_message) 
     increment_organizer_df(organizer_df)
